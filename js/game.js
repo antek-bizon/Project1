@@ -8,6 +8,7 @@ let heading
 let score = 0
 let scoreText
 
+
 const Direction = {
     LEFT: 1,
     RIGHT: 2
@@ -26,14 +27,14 @@ const state = {
  */
 
 const createAligned = (scene, count, texture, scrollFactor) => {
-    let x = 0
+    let a = 0
     for (let i = 0; i < count; ++i)
     {
-        const m = scene.add.image(x, scene.game.config.height, texture)
+        const m = scene.add.image(a, scene.game.config.height, texture)
             .setOrigin(0, 2)
             .setScrollFactor(scrollFactor)
         
-        x += m.width
+        a += m.width
     }
 }
 
@@ -79,6 +80,7 @@ function onPreload() {
     this.load.image('Wall', 'img/wall.png')
     this.load.image('Tool', 'img/tool1.png')
     this.load.image('Bomb', 'img/bomb.png')
+    this.load.image('Trap', 'img/trap.png')
 
     this.load.image('Sky', 'img/parallax/parallax_mountain_pack/layers/sky.png')
     this.load.image('C_trees', 'img/parallax/parallax_mountain_pack/layers/c_trees.png')
@@ -131,10 +133,16 @@ function onCreate() {
     //Platforms 
     
     platforms = this.physics.add.staticGroup()
+    walls = this.physics.add.staticGroup()
+    trap = this.physics.add.staticGroup()
+
     platforms.create(0, 450, 'Level00')
         .setOrigin(0, 0)
         .refreshBody()
-    platforms.create(-10, 0, 'Wall')
+    walls.create(-10, 0, 'Wall')
+        .setOrigin(0, 0)
+        .refreshBody()
+    trap.create(900, 300, 'Trap')
         .setOrigin(0, 0)
         .refreshBody()
     
@@ -146,6 +154,8 @@ function onCreate() {
         .setOrigin(0, 0)
         .setScale(0.5)
         .refreshBody()
+
+    
     //platforms.create(0, 550, 'Ground').setOrigin(0, 0).setScale(0.8).refreshBody()
     //platforms.create(200, 550, 'Ground').setOrigin(0, 0).setScale(0.8).refreshBody()
     //platforms.create(500, 550, 'Ground').setOrigin(0, 0).setScale(0.8).refreshBody()
@@ -164,8 +174,10 @@ function onCreate() {
     //ball.setBounce(0.2)
     //ball.setCollideWorldBounds(true);
     
-    bombs = this.physics.add.group()
+    
 
+
+    bombs = this.physics.add.group()
 
     stars = this.physics.add.group({
         key: 'Tool',
@@ -181,11 +193,13 @@ function onCreate() {
     })
 
     this.physics.add.collider(ball, platforms)
+    this.physics.add.collider(ball, walls, climbing, null, this)
     this.physics.add.collider(stars, platforms)
     this.physics.add.overlap(ball, stars, collectStar, null, this)
     this.physics.add.collider(bombs, platforms)
-    this.physics.add.collider(ball, bombs, hitBomb, null, this)
-    
+    this.physics.add.collider(bombs, walls)
+    this.physics.add.collider(ball, bombs, death, null, this)
+    this.physics.add.collider(ball, trap, death, null, this)
 
     function collectStar (ball, star)
     {
@@ -198,14 +212,14 @@ function onCreate() {
         {
             stars.children.iterate(function (child) {
 
-                child.enableBody(true, child.z, 0, true, true);
+                child.enableBody(true, child.x, 0, true, true);
 
             })
 
-            let z = (ball.z < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+            let x = (ball.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
 
-            let bomb = bombs.create(z, 16, 'Bomb')
-            bomb.setBounce(1)
+            let bomb = bombs.create(x, 16, 'Bomb')
+            bomb.setBounce(1).setScale(0.5)
             //bomb.setCollideWorldBounds(true)
             bomb.setVelocity(Phaser.Math.Between(-200, 200), 20)
         }
@@ -216,17 +230,26 @@ function onCreate() {
 
 
 
-    function hitBomb (ball, bomb)
+    function death (ball, bomb)
     {
-        this.physics.pause();
+        this.physics.pause()
 
-        ball.setTint(0xff0000);
+        ball.setTint(0xff0000)
         
-        //player.anims.play('turn');
+        //player.anims.play('turn')
         
-        gameOver = true;
+        gameOver = true
+        this.add.text(width * 0.4, height * 0.4, 'Game over', { fontSize: '32px', fill: '#001'})
+        .setScrollFactor(0)
+    }
+
+    function climbing (ball, walls)
+    {
+        ball.setVelocityY(clim_speed)
+        //ball.setVelocityX(wall_jump)
     }
     //End of sprites physics
+
 
     //Animations
     
@@ -315,6 +338,28 @@ function onUpdate() {
 
     }
 
+    if (cursors.up.isDown)
+    {
+        clim_speed = -300
+    }
+    else if (cursors.up.isUp && cursors.down.isUp)
+    {
+        clim_speed = 0
+    }
+    if (cursors.down.isDown)
+    {
+        clim_speed = 250
+    }
+    /*
+    if (cursors.left.isDown)
+    {
+        wall_jump = -250
+    }
+    else if (cursors.right.isDown)
+    {
+        wall_jump = 250
+    }
+    */
     this.cameras.main.startFollow(ball)
 
 }
