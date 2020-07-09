@@ -5,6 +5,8 @@ let ball
 let platforms
 let walking
 let heading
+let score = 0
+let scoreText
 
 const Direction = {
     LEFT: 1,
@@ -54,6 +56,13 @@ const config = {
     }
 }
 
+function onLeftKeyUp(context) {
+    console.log('Left Key is UP')
+}
+
+function onRightKeyUp(context) {
+    console.log('Right Key is UP')
+}
 
 function onLoad() {
     console.log('Hello World!')
@@ -67,6 +76,9 @@ function onPreload() {
     this.load.image('Ground', 'img/ground.png')
     this.load.image('Walking', 'img/ground-walking.png')
     this.load.image('Level00', 'img/level00.png')
+    this.load.image('Wall', 'img/wall.png')
+    this.load.image('Tool', 'img/tool1.png')
+    this.load.image('Bomb', 'img/bomb.png')
 
     this.load.image('Sky', 'img/parallax/parallax_mountain_pack/layers/sky.png')
     this.load.image('C_trees', 'img/parallax/parallax_mountain_pack/layers/c_trees.png')
@@ -119,13 +131,24 @@ function onCreate() {
     //Platforms 
     
     platforms = this.physics.add.staticGroup()
-    platforms.create(0, 450, 'Level00').setOrigin(0, 0).refreshBody()
+    platforms.create(0, 450, 'Level00')
+        .setOrigin(0, 0)
+        .refreshBody()
+    platforms.create(-10, 0, 'Wall')
+        .setOrigin(0, 0)
+        .refreshBody()
     
-    platforms.create(-10, 300, 'Ground').setOrigin(0, 0).setScale(0.5).refreshBody()
-    platforms.create(500, 200, 'Ground').setOrigin(0, 0).setScale(0.5).refreshBody()
-    platforms.create(0, 550, 'Ground').setOrigin(0, 0).setScale(0.8).refreshBody()
-    platforms.create(200, 550, 'Ground').setOrigin(0, 0).setScale(0.8).refreshBody()
-    platforms.create(500, 550, 'Ground').setOrigin(0, 0).setScale(0.8).refreshBody()
+    platforms.create(-10, 300, 'Ground')
+        .setOrigin(0, 0)
+        .setScale(0.5)
+        .refreshBody()
+    platforms.create(500, 200, 'Ground')
+        .setOrigin(0, 0)
+        .setScale(0.5)
+        .refreshBody()
+    //platforms.create(0, 550, 'Ground').setOrigin(0, 0).setScale(0.8).refreshBody()
+    //platforms.create(200, 550, 'Ground').setOrigin(0, 0).setScale(0.8).refreshBody()
+    //platforms.create(500, 550, 'Ground').setOrigin(0, 0).setScale(0.8).refreshBody()
     
     //End of platforms
 
@@ -135,12 +158,74 @@ function onCreate() {
 
     //Sprites physics
     
-    ball = this.physics.add.sprite(0, 0, 'Ball').setOrigin(0, 0).setScale(2)
+    ball = this.physics.add.sprite(0, 0, 'Ball')
+        .setOrigin(0, 0)
+        .setScale(2)
     //ball.setBounce(0.2)
     //ball.setCollideWorldBounds(true);
     
-    this.physics.add.collider(ball, platforms)
+    bombs = this.physics.add.group()
+
+
+    stars = this.physics.add.group({
+        key: 'Tool',
+        repeat: 11,
+        setXY: { x: 100, y: 0, stepX: 150 }
+    })
+
+
+    stars.children.iterate(function (child) {
     
+        child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+    
+    })
+
+    this.physics.add.collider(ball, platforms)
+    this.physics.add.collider(stars, platforms)
+    this.physics.add.overlap(ball, stars, collectStar, null, this)
+    this.physics.add.collider(bombs, platforms)
+    this.physics.add.collider(ball, bombs, hitBomb, null, this)
+    
+
+    function collectStar (ball, star)
+    {
+        star.disableBody(true, true)
+
+        score += 10
+        scoreText.setText('Score' + score)
+
+        if (stars.countActive(true) === 0)
+        {
+            stars.children.iterate(function (child) {
+
+                child.enableBody(true, child.z, 0, true, true);
+
+            })
+
+            let z = (ball.z < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+
+            let bomb = bombs.create(z, 16, 'Bomb')
+            bomb.setBounce(1)
+            //bomb.setCollideWorldBounds(true)
+            bomb.setVelocity(Phaser.Math.Between(-200, 200), 20)
+        }
+    }
+
+    scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' })
+        .setScrollFactor(0)
+
+
+
+    function hitBomb (ball, bomb)
+    {
+        this.physics.pause();
+
+        ball.setTint(0xff0000);
+        
+        //player.anims.play('turn');
+        
+        gameOver = true;
+    }
     //End of sprites physics
 
     //Animations
@@ -177,6 +262,10 @@ function onCreate() {
         frameRate: 20
     })
     //End of animations
+
+
+    this.input.keyboard.on('keydown-A', onLeftKeyUp, state);
+    this.input.keyboard.on('keyup-A', onRightKeyUp, state);
 }
 
 function onUpdate() {
@@ -223,6 +312,7 @@ function onUpdate() {
     if (cursors.up.isDown && ball.body.touching.down)
     {
         ball.setVelocityY(-330)
+
     }
 
     this.cameras.main.startFollow(ball)
@@ -236,4 +326,3 @@ function onClick() {
     button.visible = false
 }
 */
-
