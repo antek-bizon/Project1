@@ -81,6 +81,7 @@ function onPreload() {
     this.load.image('Tool', 'img/tool1.png')
     this.load.image('Bomb', 'img/bomb.png')
     this.load.image('Trap', 'img/trap.png')
+    this.load.image('Interaction', 'img/interact.png')
 
     this.load.image('Sky', 'img/parallax/parallax_mountain_pack/layers/sky.png')
     this.load.image('C_trees', 'img/parallax/parallax_mountain_pack/layers/c_trees.png')
@@ -135,6 +136,7 @@ function onCreate() {
     platforms = this.physics.add.staticGroup()
     walls = this.physics.add.staticGroup()
     trap = this.physics.add.staticGroup()
+    interaction = this.physics.add.staticGroup()
 
     platforms.create(0, 450, 'Level00')
         .setOrigin(0, 0)
@@ -143,6 +145,9 @@ function onCreate() {
         .setOrigin(0, 0)
         .refreshBody()
     trap.create(900, 300, 'Trap')
+        .setOrigin(0, 0)
+        .refreshBody()
+    interaction.create(200, 200, 'Interaction')
         .setOrigin(0, 0)
         .refreshBody()
     
@@ -174,7 +179,6 @@ function onCreate() {
     //ball.setBounce(0.2)
     //ball.setCollideWorldBounds(true);
     
-    
 
 
     bombs = this.physics.add.group()
@@ -195,11 +199,21 @@ function onCreate() {
     this.physics.add.collider(ball, platforms)
     this.physics.add.collider(ball, walls, climbing, null, this)
     this.physics.add.collider(stars, platforms)
-    this.physics.add.overlap(ball, stars, collectStar, null, this)
     this.physics.add.collider(bombs, platforms)
     this.physics.add.collider(bombs, walls)
     this.physics.add.collider(ball, bombs, death, null, this)
     this.physics.add.collider(ball, trap, death, null, this)
+
+    this.physics.add.overlap(ball, stars, collectStar, null, this)
+    this.physics.add.overlap(ball, interaction, trigger)
+
+    function trigger ()
+    {
+        if (cursors.down.isDown)
+        {
+            console.log("Interaction")
+        }
+    }
 
     function collectStar (ball, star)
     {
@@ -344,7 +358,7 @@ function onUpdate() {
     }
     else if (cursors.up.isUp && cursors.down.isUp)
     {
-        clim_speed = 0
+        clim_speed = -5
     }
     if (cursors.down.isDown)
     {
